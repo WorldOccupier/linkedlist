@@ -1,5 +1,7 @@
 # linkedlist
 
+**Live:** https://linkedlist.curiously-optimistic.workers.dev
+
 A personal links page that looks and feels like Neovim. Dark theme, relative line numbers, a cursorline, a statusline with modes, and a command line — all keyboard-driven.
 
 It's a single `index.html` with no build step and no dependencies (apart from the JetBrains Mono web font).
