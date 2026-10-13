@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>nvim — links</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d0e14; --bg-dark:#08080c; --bg-hl:#1c1f2e; --gutter:#3b4261; --fg:#c0caf5; --fg-dim:#a9b1d6; --comment:#565f89;
+  --blue:#7aa2f7; --cyan:#7dcfff; --teal:#2ac3de; --green:#9ece6a; --orange:#ff9e64; --yellow:#e0af68;
+  --purple:#bb9af7; --red:#f7768e; --magenta:#ff007c; --sel:#2d3f76;
+  --mode:var(--blue);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--fg);font:14px/1.6 "JetBrains Mono",ui-monospace,Menlo,monospace;overflow:hidden}
+body{display:grid;grid-template-rows:auto 1fr auto auto}
+::selection{background:var(--sel)}
+
+/* ---------- tabline ---------- */
+#tabline{display:flex;background:var(--bg-dark);height:28px;align-items:stretch;font-size:13px;user-select:none}
+.tab{display:flex;align-items:center;gap:8px;padding:0 14px;color:var(--comment);border-right:1px solid #0f0f14}
+.tab.active{background:var(--bg);color:var(--fg);box-shadow:inset 0 2px 0 var(--blue)}
+.tab .x{color:var(--comment);font-size:11px}
+.tab.active .dot{color:var(--green)}
+#tabline .fill{flex:1}
+#tabline .right{display:flex;align-items:center;padding:0 12px;color:var(--purple);gap:6px}
+
+/* ---------- editor ---------- */
+#editor{position:relative;display:grid;grid-template-columns:auto 1fr;overflow:hidden}
+#gutter{padding-top:4px;text-align:right;color:var(--gutter);user-select:none;font-size:13px;min-width:58px}
+#gutter div{height:22px;padding-right:12px;position:relative}
+#gutter div.cur{color:var(--yellow);font-weight:600}
+#gutter div::before{content:"";position:absolute;left:2px;top:3px;bottom:3px;width:2px;background:var(--sign,transparent)}
+#buffer{position:relative;overflow:hidden}
+#cursorline{position:absolute;left:0;right:0;height:22px;background:var(--bg-hl);transition:top .12s cubic-bezier(.2,.8,.2,1);pointer-events:none}
+.tildes{position:absolute;inset:4px 0 0 0;color:var(--gutter);pointer-events:none}
+.tildes div{height:22px;padding-left:4px}
+#indent{position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 calc(2ch*2 - 1px),rgba(59,66,97,.25) calc(2ch*2 - 1px) calc(2ch*2));pointer-events:none;opacity:.5}
+
+/* ---------- dashboard ---------- */
+#dash{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:20px}
+#logo{white-space:pre;font-weight:800;font-size:12px;line-height:1.15;background:linear-gradient(90deg,var(--blue),var(--purple),var(--magenta),var(--orange),var(--blue));background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:flow 12s linear infinite;filter:drop-shadow(0 0 18px rgba(122,162,247,.25))}
+@keyframes flow{to{background-position:300% 0}}
+#sub{color:var(--comment);font-size:12px;margin-top:-8px}
+#sub b{color:var(--green);font-weight:400}
+#links{list-style:none;display:grid;gap:2px;width:min(560px,92vw)}
+#links a{display:grid;grid-template-columns:28px 1fr auto;align-items:center;gap:14px;padding:6px 14px;border-radius:6px;text-decoration:none;color:var(--fg-dim);position:relative;transition:background .15s,color .15s,transform .15s}
+#links a .ic{text-align:center;font-size:16px;color:var(--c)}
+#links a .name b{color:var(--c);font-weight:600}
+#links a .url{color:var(--comment);font-size:12px;margin-left:10px}
+#links a kbd{font:inherit;color:var(--orange);border:1px solid var(--gutter);border-radius:4px;padding:0 7px;font-size:12px;background:var(--bg-dark)}
+#links a.sel{background:var(--bg-hl);color:var(--fg);transform:translateX(6px)}
+#links a.sel::before{content:"❯";position:absolute;left:-14px;color:var(--c);animation:blink 1s steps(1) infinite}
+#links a.sel kbd{background:var(--c);color:var(--bg-dark);border-color:var(--c)}
+#links a.hide{display:none}
+#links a.flash{animation:flash .5s}
+@keyframes flash{0%{background:var(--c);color:var(--bg)}100%{background:var(--bg-hl)}}
+@keyframes blink{50%{opacity:0}}
+#footer{color:var(--comment);font-size:12px;text-align:center}
+#footer span{color:var(--purple)}
+
+
+/* ---------- notify ---------- */
+#notify{position:absolute;top:10px;right:14px;display:flex;flex-direction:column;gap:8px;z-index:5}
+.toast{background:var(--bg-dark);border:1px solid var(--gutter);border-left:3px solid var(--green);padding:8px 14px;border-radius:6px;font-size:12px;min-width:240px;animation:slide .25s ease-out;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+.toast .t{color:var(--green);font-weight:600}
+.toast.out{opacity:0;transform:translateX(30px);transition:.3s}
+@keyframes slide{from{opacity:0;transform:translateX(40px)}}
+
+/* ---------- statusline ---------- */
+#status{display:flex;height:24px;background:var(--bg-dark);font-size:13px;user-select:none;align-items:stretch}
+.seg{display:flex;align-items:center;padding:0 10px;gap:6px;white-space:nowrap}
+.mode{background:var(--mode);color:var(--bg-dark);font-weight:800;position:relative;transition:background .2s}
+.mode::after,.pos::before{content:"";position:absolute;top:0;bottom:0;width:0;border-style:solid}
+.mode::after{right:-10px;border-width:12px 0 12px 10px;border-color:transparent transparent transparent var(--mode)}
+.branch{background:var(--bg-hl);color:var(--purple);padding-left:20px}
+.add{color:var(--green)} .mod{color:var(--yellow)} .del{color:var(--red)}
+.file{color:var(--fg);padding-left:22px} .file .m{color:var(--green)}
+.sp{flex:1}
+.dim{color:var(--fg-dim)}
+.pct{background:var(--bg-hl);color:var(--blue);padding-right:20px}
+.pos{background:var(--mode);color:var(--bg-dark);font-weight:800;position:relative;padding-left:14px}
+.pos::before{left:-10px;border-width:12px 10px 12px 0;border-color:transparent var(--mode) transparent transparent}
+#cmd{height:24px;padding:0 10px;display:flex;align-items:center;gap:0;font-size:13px;color:var(--fg-dim)}
+#cmd .caret{display:inline-block;width:8px;height:16px;background:var(--fg);animation:blink 1s steps(1) infinite;vertical-align:middle}
+#cmd .err{color:var(--red)}
+@media (max-width:700px){#logo{font-size:7px}.hide-sm{display:none}#links a .url{display:none}}
+</style>
+</head>
+<body>
+
+<div id="tabline">
+  <div class="fill"></div>
+  <div class="right"><span id="clock"></span></div>
+</div>
+
+<div id="editor">
+  <div id="gutter"></div>
+  <div id="buffer">
+    <div id="indent"></div>
+    <div id="cursorline"></div>
+    <div class="tildes" id="tildes"></div>
+    <div id="notify"></div>
+    <div id="dash">
+      <ul id="links"></ul>
+      <div id="footer"><span>j/k</span> move · <span>⏎</span> open · <span>key</span> open · <span>/</span> filter · <span>:</span> cmd</div>
+    </div>
+  </div>
+</div>
+
+<div id="status">
+  <div class="seg mode" id="mode">NORMAL</div>
+  <div class="seg file hide-sm">links.lua <span class="m" id="modified"></span></div>
+  <div class="sp"></div>
+  <div class="seg dim hide-sm" id="lsp">lua_ls</div>
+  <div class="seg dim hide-sm">utf-8</div>
+  <div class="seg dim">lua</div>
+  <div class="seg pct" id="pct">Top</div>
+  <div class="seg pos" id="pos">1:1</div>
+</div>
+<div id="cmd"></div>
+
+<script>
+/* ===== EDIT YOUR LINKS HERE =====
+   key: single char shortcut | icon: any glyph/emoji | c: accent colour */
+const LINKS = [
+  { key:"g", name:"GitHub", url:"https://github.com/WorldOccupier", icon:"", c:"var(--fg)" },
+  { key:"x", name:"X",      url:"https://x.com/vatsaishere",       icon:"𝕏", c:"var(--cyan)" },
+];
+/* ================================ */
+
+const $ = s => document.querySelector(s);
+const linksEl = $("#links"), cmdEl = $("#cmd"), modeEl = $("#mode");
+let sel = 0, mode = "NORMAL", buf = "", pending = "";
+const MODES = { NORMAL:"var(--blue)", INSERT:"var(--green)", COMMAND:"var(--yellow)", SEARCH:"var(--purple)", VISUAL:"var(--magenta)" };
+
+// build list — keys reserved for navigation are swapped to Shift variants automatically
+const RESERVED = new Set(["j","k","q",":","/","?"," "]);
+LINKS.forEach((l,i) => {
+  if (RESERVED.has(l.key)) l.key = l.key.toUpperCase();
+  const a = document.createElement("a");
+  a.href = l.url; a.target = "_blank"; a.rel = "noopener";
+  a.style.setProperty("--c", l.c);
+  const host = new URL(l.url).host.replace(/^www\./,"");
+  a.innerHTML = `<span class="ic">${l.icon}</span><span class="name"><b>${l.name[0]}</b>${l.name.slice(1)}<span class="url">${host}</span></span><kbd>${l.key}</kbd>`;
+  a.addEventListener("mouseenter", () => select(i));
+  a.addEventListener("click", () => feedback(i));
+  linksEl.appendChild(a);
+});
+const items = [...linksEl.children];
+
+// gutter & tildes
+function layout(){
+  const n = Math.ceil($("#buffer").clientHeight / 22) + 1;
+  const signs = ["","","","var(--green)","var(--green)","","var(--blue)","","","","var(--red)","","","var(--blue)","var(--blue)"];
+  $("#gutter").innerHTML = Array.from({length:n},(_,i)=>`<div ></div>`).join("");
+  $("#tildes").innerHTML = "";
+  render();
+}
+function visible(){ return items.filter(a => !a.classList.contains("hide")); }
+function render(){
+  const vis = visible(); sel = Math.max(0, Math.min(sel, vis.length-1));
+  items.forEach(a => a.classList.remove("sel"));
+  const cur = vis[sel];
+  if (!cur) return;
+  cur.classList.add("sel");
+  // align cursorline + relative numbers to the selected link
+  const top = cur.getBoundingClientRect().top - $("#buffer").getBoundingClientRect().top + cur.offsetHeight/2 - 11;
+  const row = Math.round((top - 4) / 22), y = row*22 + 4;
+  $("#cursorline").style.top = y + "px";
+  [...$("#gutter").children].forEach((d,i) => {
+    const rel = Math.abs(i - row);
+    d.textContent = rel === 0 ? (sel+1) : rel;
+    d.classList.toggle("cur", rel === 0);
+  });
+  $("#pos").textContent = `${sel+1}:1`;
+  $("#pct").textContent = sel === 0 ? "Top" : sel === vis.length-1 ? "Bot" : Math.round(sel/(vis.length-1)*100)+"%";
+}
+function select(i){ const v = visible(); const idx = v.indexOf(items[i]); if (idx>=0){ sel = idx; render(); } }
+// a real click on the <a target=_blank> is never popup-blocked, unlike window.open
+function open(i){ items[i].click(); }
+function feedback(i){
+  const l = LINKS[i];
+  items[i].classList.remove("flash"); void items[i].offsetWidth; items[i].classList.add("flash");
+  toast(`:tabnew ${l.name}`, l.url);
+}
+function setMode(m){ mode = m; modeEl.textContent = m; document.documentElement.style.setProperty("--mode", MODES[m]); }
+function showCmd(prefix){ cmdEl.innerHTML = `${prefix}${escape(buf)}<span class="caret"></span>`; }
+function msg(t, err){ cmdEl.innerHTML = err ? `<span class="err">${t}</span>` : t; }
+function escape(s){ return s.replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
+function toast(title, body){
+  const t = document.createElement("div"); t.className = "toast";
+  t.innerHTML = `<div class="t">󰌹 ${escape(title)}</div><div class="dim">${escape(body)}</div>`;
+  $("#notify").appendChild(t);
+  setTimeout(()=>{ t.classList.add("out"); setTimeout(()=>t.remove(),300); }, 2400);
+}
+function filter(q){
+  q = q.toLowerCase();
+  items.forEach((a,i) => a.classList.toggle("hide", !!q && !(LINKS[i].name+LINKS[i].url).toLowerCase().includes(q)));
+  sel = 0; render();
+}
+function runCmd(c){
+  c = c.trim();
+  if (!c) return msg("");
+  if (/^\d+$/.test(c)) { sel = +c-1; render(); return msg(""); }
+  if (c === "q" || c === "q!" || c === "wq") return msg("E37: No write since last change (add ! to override)… just kidding, you can never leave.", true);
+  if (c === "qa" || c === "openall") { LINKS.forEach((_,i)=>open(i)); return msg(`opened ${LINKS.length} tabs`); }
+  if (c.startsWith("colo")) { document.body.style.filter = document.body.style.filter ? "" : "hue-rotate(140deg)"; return msg("colorscheme switched"); }
+  const m = c.match(/^(?:o|open|e|tabnew)\s+(.+)/);
+  if (m) {
+    const i = LINKS.findIndex(l => l.name.toLowerCase().includes(m[1].toLowerCase()));
+    if (i >= 0) { open(i); return msg(""); }
+    return msg(`E32: No bookmark matching "${escape(m[1])}"`, true);
+  }
+  msg(`E492: Not an editor command: ${escape(c)}`, true);
+}
+
+document.addEventListener("keydown", e => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const k = e.key;
+  if (mode === "COMMAND" || mode === "SEARCH") {
+    e.preventDefault();
+    if (k === "Escape") { buf = ""; if (mode==="SEARCH") filter(""); setMode("NORMAL"); return msg(""); }
+    if (k === "Enter") {
+      if (mode === "COMMAND") runCmd(buf);
+      else { const v = visible()[sel]; msg(`/${escape(buf)}`); if (v && buf) {} }
+      buf = ""; setMode("NORMAL"); return;
+    }
+    if (k === "Backspace") { if (!buf) { if (mode==="SEARCH") filter(""); setMode("NORMAL"); return msg(""); } buf = buf.slice(0,-1); }
+    else if (k.length === 1) buf += k;
+    if (mode === "SEARCH") filter(buf);
+    return showCmd(mode === "COMMAND" ? ":" : "/");
+  }
+  // NORMAL
+  if (k === "Escape") { filter(""); pending=""; return msg(""); }
+  if (k === ":") { e.preventDefault(); setMode("COMMAND"); buf=""; return showCmd(":"); }
+  if (k === "/") { e.preventDefault(); setMode("SEARCH"); buf=""; return showCmd("/"); }
+  const vis = visible();
+  if (k === "j" || k === "ArrowDown") { e.preventDefault(); sel = (sel+1)%vis.length; return render(); }
+  if (k === "k" || k === "ArrowUp")   { e.preventDefault(); sel = (sel-1+vis.length)%vis.length; return render(); }
+  if (k === "G") { sel = vis.length-1; return render(); }
+  if (k === "g" && !LINKS.some(l=>l.key==="g")) { sel = 0; return render(); }
+  if (k === "Enter" || k === "o" && !LINKS.some(l=>l.key==="o")) { const a = vis[sel]; if (a) open(items.indexOf(a)); return; }
+  if (k === "i") { setMode("INSERT"); msg("-- INSERT -- (read-only buffer, press esc)"); return; }
+  if (k === "v") { setMode(mode==="VISUAL"?"NORMAL":"VISUAL"); return; }
+  const i = LINKS.findIndex(l => l.key === k);
+  if (i >= 0) { select(i); open(i); }
+});
+document.addEventListener("keyup", e => { if (e.key==="Escape" && mode!=="NORMAL") setMode("NORMAL"); });
+
+setInterval(() => $("#clock").textContent = " " + new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}), 1000);
+$("#clock").textContent = " " + new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"});
+window.addEventListener("resize", layout);
+document.fonts.ready.then(layout); layout();
+</script>
+</body>
+</html>
